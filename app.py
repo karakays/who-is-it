@@ -1,5 +1,8 @@
 import requests, time, hmac, hashlib, base64
+
 from urllib.parse import urlencode, quote
+
+from twython import Twython
 
 
 consumer_key            = "0lE48SDKD1qTYkBd6lGiLPV3Z"
@@ -13,7 +16,7 @@ twt_request_token_url   = twt_base_url + "/oauth/request_token"
 def nonce():
     """ 32 bytes of random data encoded in base64
     """
-    return "nonce-123"
+    return "nonce-1236"
 
 
 def timestamp():
@@ -27,7 +30,9 @@ def sign(message):
     print(f'secret={secret}')
     mac = hmac.new(secret.encode(), message.encode(), hashlib.sha1)
     digest = mac.digest()
-    return base64.b64encode(digest).decode()
+    encoded = base64.b64encode(digest).decode()
+    print(f'hmac={encoded}')
+    return encoded
 
 
 def base_string():
@@ -53,7 +58,7 @@ oauth_callback=\"{quote(oauth_callback, safe='')}\", \
 oauth_signature_method=\"{oauth_signature_method}\", \
 oauth_timestamp=\"{tmstamp}\", \
 oauth_consumer_key=\"{consumer_key}\", \
-oauth_signature=\"{sign(base_string())}\", \
+oauth_signature=\"{quote(sign(base_string()), safe='')}\", \
 oauth_version=\"1.0\"\
 "
 
@@ -64,4 +69,10 @@ oauth_version=\"1.0\"\
 
 print(auth_header())
 r = requests.post(twt_request_token_url, headers=auth_header())
-print(f"r.code={r.status_code}, r.headers={r.headers}, r.json={r.json()}")
+print(f"r.code={r.status_code}, r.headers={r.headers}, r.json={r.text}")
+
+
+#twitter = Twython(consumer_key, consumer_secret)
+#auth = twitter.get_authentication_tokens(callback_url='https://karakays.com/callback')
+#print(auth)
+#print(auth['auth_url'])
