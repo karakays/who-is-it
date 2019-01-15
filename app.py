@@ -74,7 +74,7 @@ class temp_cred_request:
         base = quote(twt_request_token_url, safe='') + '&' + quote(query, safe='')
         base = "&".join(("POST", base))
         logger.debug('Base string calculated: %s', base)
-        return base 
+        return base
 
 
     @property
@@ -127,7 +127,7 @@ class token_cred_request:
         base = quote(twt_access_token_url, safe='') + '&' + quote(query, safe='')
         base = "&".join(("POST", base))
         logger.debug('Base string calculated: %s', base)
-        return base 
+        return base
 
 
     @property
@@ -159,7 +159,7 @@ class authn_request:
         oauth_verifier=returned from resource owner auth phase
         """
         self.key = oauth_consumer_key
-        self.secret = quote(oauth_consumer_secret + '&' + oauth_token_secret, safe='')
+        self.secret = quote(oauth_consumer_secret, safe='') + '&' + quote(oauth_token_secret, safe='')
         self.token = oauth_token
         self.nonce = quote(generate_nonce(), safe='')
         self.timestamp = timestamp()
@@ -179,7 +179,7 @@ class authn_request:
         base = quote(twt_followers_url, safe='') + '&' + quote(query, safe='')
         base = "&".join(("GET", base))
         logger.debug('Base string calculated: %s', base)
-        return base 
+        return base
 
 
     @property
@@ -246,7 +246,7 @@ class twt_authn:
         base = quote(twt_access_token_url, safe='') + '&' + quote(query, safe='')
         base = "&".join(("POST", base))
         logger.debug('Base string calculated: %s', base)
-        return base 
+        return base
 
 
 rt_req = temp_cred_request(oauth_consumer_key, oauth_consumer_secret, oauth_callback)
