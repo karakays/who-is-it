@@ -8,7 +8,7 @@ from base64 import b64encode, b32encode
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
-# Applicatoin identifier
+# read from ENV VAR here
 oauth_consumer_key      = "0lE48SDKD1qTYkBd6lGiLPV3Z"
 oauth_consumer_secret   = "caWLLya4seNZijB7fg4XxH5a3LzPLqIKa4VOK95to1VSvMyDzT"
 oauth_callback          = "https://karakays.com/callback"
@@ -159,7 +159,8 @@ class authn_request:
         oauth_verifier=returned from resource owner auth phase
         """
         self.key = oauth_consumer_key
-        self.secret = quote(oauth_consumer_secret, safe='') + '&' + quote(oauth_token_secret, safe='')
+        self.secret = quote(oauth_consumer_secret, safe='') + '&' +
+                      quote(oauth_token_secret, safe='')
         self.token = oauth_token
         self.nonce = quote(generate_nonce(), safe='')
         self.timestamp = timestamp()
@@ -168,7 +169,7 @@ class authn_request:
     # TODO: sort this out
     def base_string(self):
         query = urlencode(
-                { "oauth_consumer_key": self.key,
+                {"oauth_consumer_key": self.key,
                  "oauth_nonce": self.nonce,
                  "oauth_signature_method": oauth_signature_method,
                  "oauth_timestamp": self.timestamp,
@@ -198,7 +199,6 @@ oauth_version=\"{oauth_version}\"\
 "
 
 
-
 """
 base: oauth_consumer_key, oauth_consumer_secret
 request_token: callback
@@ -207,14 +207,15 @@ access_token: oauth_token, oauth_token_secret, oauth_verifier
 api call: oauth_token (access token)
 """
 class twt_authn:
-    def __init__(self, oauth_consumer_key, oauth_consumer_secret, kwargs):
+    def __init__(self, oauth_consumer_key, oauth_consumer_secret, oauth_token=None, oauth_token_secret=None, oauth_verifier=None, oauth_callback=None):
         """
         oauth_token=returned from request_token response
         oauth_token_secret=returned from request_token response
         oauth_verifier=returned from resource owner auth phase
         """
         self.key = oauth_consumer_key
-        self.secret = quote(oauth_consumer_secret + '&' + kwargs.get(oauth_token_secret, ''), safe='')
+        self.secret = quote(oauth_consumer_secret, safe='') + '&' +
+                      quote(kwargs.get(oauth_token_secret, ''), safe='')
         self.token = oauth_token
         self.verifier = oauth_verifier
         self.nonce = quote(generate_nonce(), safe='')
@@ -238,6 +239,7 @@ class twt_authn:
         #if OAUTH_CALLBACK_KEY in self.params:
         #    oauth_params.append((OAUTH_CALLBACK_KEY, params.get(OAUTH_CALLBACK_KEY))
 
+        # sort params lexically
         oauth_params.sort(key = lambda p: p[0])
 
         query = urlencode(oauth_params)
@@ -248,7 +250,22 @@ class twt_authn:
         logger.debug('Base string calculated: %s', base)
         return base
 
+    @property
+    def signature(self):
+        return quote(compute_hmac(self.secret, self.base_string()), safe='')
 
+
+    def auth_header(self):
+        return f"OAuth oauth_nonce=\"{self.nonce}\", \
+oauth_token=\"{quote(self.token, safe='')}\", \
+oauth_signature_method=\"{oauth_signature_method}\", \
+oauth_timestamp=\"{self.timestamp}\", \
+oauth_consumer_key=\"{self.key}\", \
+oauth_signature=\"{self.signature}\", \
+oauth_version=\"{oauth_version}\"\
+"
+
+################################## 1
 rt_req = temp_cred_request(oauth_consumer_key, oauth_consumer_secret, oauth_callback)
 
 rt_headers = {'Authorization': rt_req.auth_header()}
@@ -266,6 +283,7 @@ oauth_token, oauth_token_secret, oauth_cb_confirmed = [ e[1] for e in rt_res ]
 
 oauth_verifier = input(f'Please go to {twt_authorize_url}?oauth_token={oauth_token} and get the oauth_verifier: ').strip()
 
+################################## 2
 at_req = token_cred_request(oauth_consumer_key, oauth_consumer_secret, oauth_token, oauth_token_secret, oauth_verifier)
 
 at_headers = {'Authorization': at_req.auth_header()}
@@ -281,6 +299,7 @@ at_res = parse_qsl(r.text)
 
 oauth_token, oauth_token_secret, user_id, screen_name = [ e[1] for e in at_res ]
 
+################################## 3
 authn_req = authn_request(oauth_consumer_key, oauth_consumer_secret, oauth_token, oauth_token_secret)
 
 authn_headers = {'Authorization': authn_req.auth_header()}
