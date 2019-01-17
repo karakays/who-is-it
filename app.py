@@ -1,5 +1,7 @@
+import config
 import logging
-import os, requests, time, hmac, hashlib
+import requests, time, hmac, hashlib
+import sched
 
 from urllib.parse import urlencode, quote, parse_qsl
 from base64 import b64encode, b32encode
@@ -8,29 +10,17 @@ from base64 import b64encode, b32encode
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
-# read from ENV VAR here
-oauth_consumer_key      = "0lE48SDKD1qTYkBd6lGiLPV3Z"
-oauth_consumer_secret   = "caWLLya4seNZijB7fg4XxH5a3LzPLqIKa4VOK95to1VSvMyDzT"
-oauth_access_token        = "60745511-3C9wtHpkURxgSDsPg4cNGfm409bPRF6gbJc76u2s9"
-oauth_access_token_secret = "O6Pul5zdq0OhK08KDS13PV57sBDPARlmRIwd0D3PLTbxW"
-oauth_callback          = "https://karakays.com/callback"
-
-oauth_signature_method  = "HMAC-SHA1"
-oauth_version           = '1.0'
-
-twt_base_url            = "https://api.twitter.com"
-twt_request_token_url   = twt_base_url + "/oauth/request_token"
-twt_authorize_url       = twt_base_url + "/oauth/authorize"
-twt_access_token_url    = twt_base_url + "/oauth/access_token"
-twt_followers_url       = twt_base_url + "/1.1/followers/ids.json"
-
-OAUTH_CONSUMER_KEY_KEY  = 'oauth_consumer_key'
-OAUTH_CALLBACK_KEY      = 'oauth_callback'
-OAUTH_TOKEN_KEY         = 'oauth_token'
-OAUTH_TOKEN_SECRET_KEY  = 'oauth_token_secret'
-OAUTH_VERIFIER_KEY      = 'oauth_verifier'
 
 authn = None
+followers = None
+
+
+def percent_encode(data):
+    return quote(data, safe='')
+
+
+def timestamp():
+    return int(time.time())
 
 
 def generate_nonce():
@@ -39,10 +29,6 @@ def generate_nonce():
     """
     random_bytes = os.urandom(40)
     return b32encode(random_bytes).decode()
-
-
-def timestamp():
-    return int(time.time())
 
 
 def compute_hmac(secret, message):
