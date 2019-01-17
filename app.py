@@ -308,8 +308,19 @@ def get_follower_ids():
     return follower_ids
 
 
-authn = authn_context(oauth_consumer_key, oauth_consumer_secret,
+def run():
+    global authn, followers
+    authn = authn_context(oauth_consumer_key, oauth_consumer_secret,
                       oauth_access_token, oauth_access_token_secret)
+    followers = get_follower_ids()
+    print(followers)
 
-followers = get_follower_ids()
-print(followers)
+
+def main():
+    scheduler = sched.scheduler(time.time, time.sleep)
+    while True:
+        scheduler.enter(10, 1, run)
+        scheduler.run()
+
+if __name__ == '__main__':
+    read_config()
