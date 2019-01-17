@@ -11,6 +11,8 @@ logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 # read from ENV VAR here
 oauth_consumer_key      = "0lE48SDKD1qTYkBd6lGiLPV3Z"
 oauth_consumer_secret   = "caWLLya4seNZijB7fg4XxH5a3LzPLqIKa4VOK95to1VSvMyDzT"
+oauth_access_token        = "60745511-3C9wtHpkURxgSDsPg4cNGfm409bPRF6gbJc76u2s9"
+oauth_access_token_secret = "O6Pul5zdq0OhK08KDS13PV57sBDPARlmRIwd0D3PLTbxW"
 oauth_callback          = "https://karakays.com/callback"
 
 oauth_signature_method  = "HMAC-SHA1"
@@ -20,7 +22,6 @@ twt_base_url            = "https://api.twitter.com"
 twt_request_token_url   = twt_base_url + "/oauth/request_token"
 twt_authorize_url       = twt_base_url + "/oauth/authorize"
 twt_access_token_url    = twt_base_url + "/oauth/access_token"
-
 twt_followers_url       = twt_base_url + "/1.1/followers/ids.json"
 
 OAUTH_CONSUMER_KEY_KEY  = 'oauth_consumer_key'
@@ -28,6 +29,8 @@ OAUTH_CALLBACK_KEY      = 'oauth_callback'
 OAUTH_TOKEN_KEY         = 'oauth_token'
 OAUTH_TOKEN_SECRET_KEY  = 'oauth_token_secret'
 OAUTH_VERIFIER_KEY      = 'oauth_verifier'
+
+authn = None
 
 
 def generate_nonce():
@@ -159,8 +162,7 @@ class authn_request:
         oauth_verifier=returned from resource owner auth phase
         """
         self.key = oauth_consumer_key
-        self.secret = quote(oauth_consumer_secret, safe='') + '&' +
-                      quote(oauth_token_secret, safe='')
+        self.secret = quote(oauth_consumer_secret, safe='') + '&' + quote(oauth_token_secret, safe='')
         self.token = oauth_token
         self.nonce = quote(generate_nonce(), safe='')
         self.timestamp = timestamp()
@@ -198,7 +200,6 @@ oauth_signature=\"{self.signature}\", \
 oauth_version=\"{oauth_version}\"\
 "
 
-
 """
 base: oauth_consumer_key, oauth_consumer_secret
 request_token: callback
@@ -206,106 +207,123 @@ access_token: oauth_token, oauth_token_secret, oauth_verifier
 
 api call: oauth_token (access token)
 """
-class twt_authn:
-    def __init__(self, oauth_consumer_key, oauth_consumer_secret, oauth_token=None, oauth_token_secret=None, oauth_verifier=None, oauth_callback=None):
+class authn_context:
+    def __init__(self, oauth_consumer_key, oauth_consumer_secret, oauth_token, oauth_token_secret):
         """
         oauth_token=returned from request_token response
         oauth_token_secret=returned from request_token response
         oauth_verifier=returned from resource owner auth phase
         """
         self.key = oauth_consumer_key
-        self.secret = quote(oauth_consumer_secret, safe='') + '&' +
-                      quote(kwargs.get(oauth_token_secret, ''), safe='')
+        self.secret = quote(oauth_consumer_secret, safe='') + \
+                            '&' + quote(oauth_token_secret, safe='')
         self.token = oauth_token
-        self.verifier = oauth_verifier
         self.nonce = quote(generate_nonce(), safe='')
         self.timestamp = timestamp()
-        self.params = kwargs
 
 
-    def base_string(self):
+    def base_string(self, http_method, request_endpoint):
         oauth_params = [("oauth_consumer_key", self.key),
                         ("oauth_nonce", self.nonce),
                         ("oauth_signature_method", oauth_signature_method),
                         ("oauth_timestamp", self.timestamp),
+                        ("oauth_token", self.token),
                         ("oauth_version", oauth_version)]
 
-        #if OAUTH_TOKEN_KEY in self.params:
-        #    oauth_params.append((OAUTH_TOKEN_KEY, params.get(OAUTH_TOKEN_KEY))
-
-        #if OAUTH_VERIFIER_KEY in self.params:
-        #    oauth_params.append((OAUTH_VERIFIER_KEY, params.get(OAUTH_VERIFIER_KEY))
-
-        #if OAUTH_CALLBACK_KEY in self.params:
-        #    oauth_params.append((OAUTH_CALLBACK_KEY, params.get(OAUTH_CALLBACK_KEY))
-
-        # sort params lexically
+        # sort by keys lexically
         oauth_params.sort(key = lambda p: p[0])
 
         query = urlencode(oauth_params)
 
-        logger.debug('Query calculated: %s', query)
-        base = quote(twt_access_token_url, safe='') + '&' + quote(query, safe='')
-        base = "&".join(("POST", base))
-        logger.debug('Base string calculated: %s', base)
+        logger.debug('query=%s', query)
+        base = quote(request_endpoint, safe='') + '&' + quote(query, safe='')
+        base = "&".join((http_method, base))
+        logger.debug('base_str=%s', base)
         return base
 
-    @property
-    def signature(self):
-        return quote(compute_hmac(self.secret, self.base_string()), safe='')
+    def sign(self, base_str):
+        return quote(compute_hmac(self.secret, base_str), safe='')
 
 
-    def auth_header(self):
-        return f"OAuth oauth_nonce=\"{self.nonce}\", \
+    def get_authz_header(self, http_method, request_endpoint):
+        base_str = self.base_string(http_method, request_endpoint)
+        signature = self.sign(base_str)
+        return {'Authorization': f"OAuth oauth_nonce=\"{self.nonce}\", \
 oauth_token=\"{quote(self.token, safe='')}\", \
 oauth_signature_method=\"{oauth_signature_method}\", \
 oauth_timestamp=\"{self.timestamp}\", \
 oauth_consumer_key=\"{self.key}\", \
-oauth_signature=\"{self.signature}\", \
+oauth_signature=\"{signature}\", \
 oauth_version=\"{oauth_version}\"\
-"
+"}
 
-################################## 1
-rt_req = temp_cred_request(oauth_consumer_key, oauth_consumer_secret, oauth_callback)
+    def authenticate(self):
+        pass
 
-rt_headers = {'Authorization': rt_req.auth_header()}
+def request_temp_token(consumer_key, consumer_key_secret, callback_url):
+    request = temp_cred_request(consumer_key, consumer_secret, callback_url)
+    headers = {'Authorization': request.auth_header()}
+    api_response = requests.post(twt_request_token_url, headers=headers)
 
-r = requests.post(twt_request_token_url, headers=rt_headers)
+    if api_response.status_code != 200:
+        logger.error('No success from %s: code=%s, r.headers=%s, r.body=%s',
+                     twt_request_token_url, api_response.status_code,
+                     api_response.headers, api_response.text)
+    #if oauth_cb_confirmed == 'false':
+    token, token_secret, cb_confirmed = [ e[1] for e in
+                                         parse_qsl(api_response.text) ]
+    return (token, token_secret)
 
-if r.status_code != 200:
-    logger.error('No success from %s: code=%s, r.headers=%s, r.body=%s', twt_request_token_url, r.status_code, r.headers, r.text)
 
-rt_res = parse_qsl(r.text)
+def authorize_user(request_token):
+    oauth_verifier = input(f'''Go to {twt_authorize_url}?
+                           request_token={oauth_token} and get the
+                           oauth_verifier: ''').strip()
 
-oauth_token, oauth_token_secret, oauth_cb_confirmed = [ e[1] for e in rt_res ]
+    return oauth_verifier
 
-#if oauth_cb_confirmed == 'false':
 
-oauth_verifier = input(f'Please go to {twt_authorize_url}?oauth_token={oauth_token} and get the oauth_verifier: ').strip()
+def request_access_token(consumer_key, consumer_secret, request_token,
+                         request_token_secret, oauth_verifier):
+    request = token_cred_request(consumer_key, consumer_secret, request_token,
+                                 request_token_secret, oauth_verifier)
+    headers = {'Authorization': request.auth_header()}
 
-################################## 2
-at_req = token_cred_request(oauth_consumer_key, oauth_consumer_secret, oauth_token, oauth_token_secret, oauth_verifier)
+    api_response = requests.post(twt_access_token_url, headers=headers)
 
-at_headers = {'Authorization': at_req.auth_header()}
+    if api_response.status_code != 200:
+        logger.error('No success from %s: code=%s, r.headers=%s, r.body=%s',
+                     twt_access_token_url, api_response.status_code,
+                     api_response.headers, api_response.text)
 
-r = requests.post(twt_access_token_url, headers=at_headers)
+    at_res = parse_qsl(api_response.text)
 
-if r.status_code != 200:
-    logger.error('No success from %s: code=%s, r.headers=%s, r.body=%s', twt_access_token_url, r.status_code, r.headers, r.text)
+    token, token_secret, user_id, screen_name = [ e[1] for e in \
+                                                 parse_qsl(api_response.text) ]
 
-print("access token here:" + r.text)
+    logger.debug("access_token=%s, access_token_secret=%s, user_id=%s",
+                 token, token_secret, user_id);
 
-at_res = parse_qsl(r.text)
 
-oauth_token, oauth_token_secret, user_id, screen_name = [ e[1] for e in at_res ]
+def authenticated(func):
+    def wrapper_authenticated(*args, **kwargs):
+        if authn is None:
+            raise Error('not authenticated')
+        return func(*args, **kwargs)
+    return wrapper_authenticated
 
-################################## 3
-authn_req = authn_request(oauth_consumer_key, oauth_consumer_secret, oauth_token, oauth_token_secret)
 
-authn_headers = {'Authorization': authn_req.auth_header()}
+@authenticated
+def get_follower_ids():
+    response = requests.get(twt_followers_url,
+                            headers=authn.get_authz_header('GET',
+                                                           twt_followers_url))
+    follower_ids = response.json()['ids']
+    return follower_ids
 
-print(authn_headers)
 
-r = requests.get(twt_followers_url, headers=authn_headers)
-print(r.status_code, r.headers, r.text)
-logger.info('response %s: code=%s, r.headers=%s, r.body=%s', twt_request_token_url, r.status_code, r.headers, r.text)
+authn = authn_context(oauth_consumer_key, oauth_consumer_secret,
+                      oauth_access_token, oauth_access_token_secret)
+
+followers = get_follower_ids()
+print(followers)
