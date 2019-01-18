@@ -20,14 +20,15 @@ ACCESS_TOKEN_SECRET     = None
 def read_config_file():
     global CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET
 
-    with open('config.json1', 'r') as jsonfile:
-        config = json.load(jsonfile)
+    with open('config.json', 'r') as jsonfile:
+        config = json.load(jsonfile)['credentials']
 
         CONSUMER_KEY = config['consumer_key']
         if CONSUMER_KEY is None: raise ValueError('consumer_key not set')
 
         CONSUMER_SECRET = config['consumer_secret']
-        if CONSUMER_SECRET is None: raise ValueError('consumer_secret not set') 
+        if CONSUMER_SECRET is None: raise ValueError('consumer_secret not set')
+
         ACCESS_TOKEN = config['access_token']
         if ACCESS_TOKEN is None: raise ValueError('access_token not set')
 
@@ -38,21 +39,20 @@ def read_config_file():
 def read_env_vars():
     global CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET
 
-    CONSUMER_KEY = os.environ.get['CONSUMER_KEY']
-    if CONSUMER_KEY is None: raise 
+    CONSUMER_KEY = os.environ.get('CONSUMER_KEY')
+    if CONSUMER_KEY is None: raise ValueError('consumer_key not set')
 
-    consumer_secret = os.environ.get['CONSUMER_SECRET']
-    if consumer_secret is none: raise 
+    CONSUMER_SECRET = os.environ.get('CONSUMER_SECRET')
+    if CONSUMER_SECRET is None: raise ValueError('consumer_secret not set')
 
-    ACCESS_TOKEN = os.environ.get['ACCESS_TOKEN']
-    if access_token is none: raise 
+    ACCESS_TOKEN = os.environ.get('ACCESS_TOKEN')
+    if ACCESS_TOKEN is None: raise ValueError('access_token not set')
 
-    ACCESS_TOKEN_SECRET = os.environ.get['ACCESS_TOKEN_SECRET']
-    if ACCESS_TOKEN_SECRET is None: raise 
-
+    ACCESS_TOKEN_SECRET = os.environ.get('ACCESS_TOKEN_SECRET')
+    if ACCESS_TOKEN_SECRET is None: raise ValueError('access_token_secret not set')
 
 try:
     read_config_file()
-except ValueError, FileNotFoundError e:
+except (ValueError, FileNotFoundError) as e:
     # fallback to environment variables
     read_env_vars()
