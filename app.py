@@ -1,6 +1,6 @@
 import config
 import logging
-import requests, time, hmac, hashlib
+import requests, time, hmac, hashlib, os
 import sched
 
 from urllib.parse import urlencode, quote, parse_qsl
@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
 
 authn = None
-followers = None
+followers = set()
 
 
 def percent_encode(data):
@@ -211,10 +211,10 @@ class authn_context:
     def base_string(self, http_method, request_endpoint):
         oauth_params = [("oauth_consumer_key", self.key),
                         ("oauth_nonce", self.nonce),
-                        ("oauth_signature_method", oauth_signature_method),
+                        ("oauth_signature_method", config.OAUTH_SIGNATURE_METHOD),
                         ("oauth_timestamp", self.timestamp),
                         ("oauth_token", self.token),
-                        ("oauth_version", oauth_version)]
+                        ("oauth_version", config.OAUTH_VERSION)]
 
         # sort by keys lexically
         oauth_params.sort(key = lambda p: p[0])
@@ -236,11 +236,11 @@ class authn_context:
         signature = self.sign(base_str)
         return {'Authorization': f"OAuth oauth_nonce=\"{self.nonce}\", \
 oauth_token=\"{quote(self.token, safe='')}\", \
-oauth_signature_method=\"{oauth_signature_method}\", \
+oauth_signature_method=\"{config.OAUTH_SIGNATURE_METHOD}\", \
 oauth_timestamp=\"{self.timestamp}\", \
 oauth_consumer_key=\"{self.key}\", \
 oauth_signature=\"{signature}\", \
-oauth_version=\"{oauth_version}\"\
+oauth_version=\"{config.OAUTH_VERSION}\"\
 "}
 
     def authenticate(self):
@@ -301,26 +301,26 @@ def authenticated(func):
 
 @authenticated
 def get_follower_ids():
-    response = requests.get(twt_followers_url,
+    response = requests.get(config.TWT_FOLLOWERS_URL,
                             headers=authn.get_authz_header('GET',
-                                                           twt_followers_url))
-    follower_ids = response.json()['ids']
-    return follower_ids
+                                                           config.TWT_FOLLOWERS_URL))
+    print(response.text)
+    return set(response.json()['ids'])
 
 
 def run():
     global authn, followers
-    authn = authn_context(oauth_consumer_key, oauth_consumer_secret,
-                      oauth_access_token, oauth_access_token_secret)
-    followers = get_follower_ids()
-    print(followers)
+    authn = authn_context(config.CONSUMER_KEY, config.CONSUMER_SECRET,
+                      config.ACCESS_TOKEN, config.ACCESS_TOKEN_SECRET)
+    unfollowers = followers - get_follower_ids()
+    print(f"Unfollowed: {len(unfollowers)}")
 
 
 def main():
     scheduler = sched.scheduler(time.time, time.sleep)
     while True:
-        scheduler.enter(10, 1, run)
+        scheduler.enter(5, 1, run)
         scheduler.run()
 
 if __name__ == '__main__':
-    read_config()
+    main()
