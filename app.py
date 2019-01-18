@@ -10,7 +10,6 @@ from base64 import b64encode, b32encode
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
-
 authn = None
 followers = set()
 
@@ -186,6 +185,16 @@ oauth_signature=\"{self.signature}\", \
 oauth_version=\"{oauth_version}\"\
 "
 
+
+"""
+Cover all steps of 3 legged authn
+state pattern
+def next() method that covers all steps
+"""
+class token_authn_context:
+    pass
+
+
 """
 base: oauth_consumer_key, oauth_consumer_secret
 request_token: callback
@@ -246,6 +255,11 @@ oauth_version=\"{config.OAUTH_VERSION}\"\
     def authenticate(self):
         pass
 
+
+class authn_request_context:
+    pass
+
+
 def request_temp_token(consumer_key, consumer_key_secret, callback_url):
     request = temp_cred_request(consumer_key, consumer_secret, callback_url)
     headers = {'Authorization': request.auth_header()}
@@ -304,7 +318,7 @@ def get_follower_ids():
     response = requests.get(config.TWT_FOLLOWERS_URL,
                             headers=authn.get_authz_header('GET',
                                                            config.TWT_FOLLOWERS_URL))
-    print(response.text)
+    print(response.headers)
     return set(response.json()['ids'])
 
 
