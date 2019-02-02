@@ -1,40 +1,21 @@
 import config
 import logging
-import requests, time, hmac, hashlib, os
 import sched
+import time
 
-from urllib.parse import urlencode, quote, parse_qsl
-from base64 import b64encode, b32encode
+import twitter
+
+from utils import *
+from authn import authn_details
 
 
 logger = logging.getLogger(__name__)
+
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
-authn = None
+authentication = authn_details(config.CONSUMER_KEY, config.CONSUMER_SECRET,
+                               config.ACCESS_TOKEN, config.ACCESS_TOKEN_SECRET)
 followers = set()
-
-
-def percent_encode(data):
-    return quote(data, safe='')
-
-
-def timestamp():
-    return int(time.time())
-
-
-def generate_nonce():
-    """ 40 bytes of random data. Since twitter only accepts alphanumeric
-    " characters no padding is involved.
-    """
-    random_bytes = os.urandom(40)
-    return b32encode(random_bytes).decode()
-
-
-def compute_hmac(secret, message):
-    mac = hmac.new(secret.encode(), message.encode(), hashlib.sha1)
-    digest = mac.digest()
-    return b64encode(digest).decode()
-
 
 class temp_cred_request:
     """
@@ -134,132 +115,6 @@ oauth_verifier=\"{self.verifier}\", \
 oauth_version=\"{oauth_version}\"\
 "
 
-
-class authn_request:
-    """
-    oauth_at
-    Token credentials request
-    """
-    def __init__(self, oauth_consumer_key, oauth_consumer_secret, oauth_token, oauth_token_secret):
-        """
-        oauth_token=returned from request_token response
-        oauth_token_secret=returned from request_token response
-        oauth_verifier=returned from resource owner auth phase
-        """
-        self.key = oauth_consumer_key
-        self.secret = quote(oauth_consumer_secret, safe='') + '&' + quote(oauth_token_secret, safe='')
-        self.token = oauth_token
-        self.nonce = quote(generate_nonce(), safe='')
-        self.timestamp = timestamp()
-
-
-    # TODO: sort this out
-    def base_string(self):
-        query = urlencode(
-                {"oauth_consumer_key": self.key,
-                 "oauth_nonce": self.nonce,
-                 "oauth_signature_method": oauth_signature_method,
-                 "oauth_timestamp": self.timestamp,
-                 "oauth_token": self.token,
-                 "oauth_version": oauth_version})
-
-        logger.debug('Query calculated: %s', query)
-        base = quote(twt_followers_url, safe='') + '&' + quote(query, safe='')
-        base = "&".join(("GET", base))
-        logger.debug('Base string calculated: %s', base)
-        return base
-
-
-    @property
-    def signature(self):
-        return quote(compute_hmac(self.secret, self.base_string()), safe='')
-
-
-    def auth_header(self):
-        return f"OAuth oauth_nonce=\"{self.nonce}\", \
-oauth_token=\"{quote(self.token, safe='')}\", \
-oauth_signature_method=\"{oauth_signature_method}\", \
-oauth_timestamp=\"{self.timestamp}\", \
-oauth_consumer_key=\"{self.key}\", \
-oauth_signature=\"{self.signature}\", \
-oauth_version=\"{oauth_version}\"\
-"
-
-
-"""
-Cover all steps of 3 legged authn
-state pattern
-def next() method that covers all steps
-"""
-class token_authn_context:
-    pass
-
-
-"""
-base: oauth_consumer_key, oauth_consumer_secret
-request_token: callback
-access_token: oauth_token, oauth_token_secret, oauth_verifier
-
-api call: oauth_token (access token)
-"""
-class authn_context:
-    def __init__(self, oauth_consumer_key, oauth_consumer_secret, oauth_token, oauth_token_secret):
-        """
-        oauth_token=returned from request_token response
-        oauth_token_secret=returned from request_token response
-        oauth_verifier=returned from resource owner auth phase
-        """
-        self.key = oauth_consumer_key
-        self.secret = quote(oauth_consumer_secret, safe='') + \
-                            '&' + quote(oauth_token_secret, safe='')
-        self.token = oauth_token
-        self.nonce = quote(generate_nonce(), safe='')
-        self.timestamp = timestamp()
-
-
-    def base_string(self, http_method, request_endpoint):
-        oauth_params = [("oauth_consumer_key", self.key),
-                        ("oauth_nonce", self.nonce),
-                        ("oauth_signature_method", config.OAUTH_SIGNATURE_METHOD),
-                        ("oauth_timestamp", self.timestamp),
-                        ("oauth_token", self.token),
-                        ("oauth_version", config.OAUTH_VERSION)]
-
-        # sort by keys lexically
-        oauth_params.sort(key = lambda p: p[0])
-
-        query = urlencode(oauth_params)
-
-        logger.debug('query=%s', query)
-        base = quote(request_endpoint, safe='') + '&' + quote(query, safe='')
-        base = "&".join((http_method, base))
-        logger.debug('base_str=%s', base)
-        return base
-
-    def sign(self, base_str):
-        return quote(compute_hmac(self.secret, base_str), safe='')
-
-
-    def get_authz_header(self, http_method, request_endpoint):
-        base_str = self.base_string(http_method, request_endpoint)
-        signature = self.sign(base_str)
-        return {'Authorization': f"OAuth oauth_nonce=\"{self.nonce}\", \
-oauth_token=\"{quote(self.token, safe='')}\", \
-oauth_signature_method=\"{config.OAUTH_SIGNATURE_METHOD}\", \
-oauth_timestamp=\"{self.timestamp}\", \
-oauth_consumer_key=\"{self.key}\", \
-oauth_signature=\"{signature}\", \
-oauth_version=\"{config.OAUTH_VERSION}\"\
-"}
-
-    def authenticate(self):
-        pass
-
-
-class authn_request_context:
-    pass
-
-
 def request_temp_token(consumer_key, consumer_key_secret, callback_url):
     request = temp_cred_request(consumer_key, consumer_secret, callback_url)
     headers = {'Authorization': request.auth_header()}
@@ -306,35 +161,28 @@ def request_access_token(consumer_key, consumer_secret, request_token,
 
 
 def authenticated(func):
+    global authentication
     def wrapper_authenticated(*args, **kwargs):
-        if authn is None:
+        if authentication is None:
             raise Error('not authenticated')
         return func(*args, **kwargs)
     return wrapper_authenticated
 
 
-@authenticated
-def get_follower_ids():
-    response = requests.get(config.TWT_FOLLOWERS_URL,
-                            headers=authn.get_authz_header('GET',
-                                                           config.TWT_FOLLOWERS_URL))
-    print(response.headers)
-    return set(response.json()['ids'])
-
-
 def run():
-    global authn, followers
-    authn = authn_context(config.CONSUMER_KEY, config.CONSUMER_SECRET,
-                      config.ACCESS_TOKEN, config.ACCESS_TOKEN_SECRET)
-    unfollowers = followers - get_follower_ids()
+    global followers
+    unfollowers = followers - twitter.get_follower_ids(12)
     print(f"Unfollowed: {len(unfollowers)}")
+    #send_message()
 
 
 def main():
-    scheduler = sched.scheduler(time.time, time.sleep)
-    while True:
-        scheduler.enter(5, 1, run)
-        scheduler.run()
+    run()
+    #scheduler = sched.scheduler(time.time, time.sleep)
+    #while True:
+        #scheduler.enter(5, 1, run)
+        #scheduler.run()
+
 
 if __name__ == '__main__':
     main()
