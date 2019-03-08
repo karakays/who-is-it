@@ -11,8 +11,6 @@ from authn import authn_details
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
-
 followers = set()
 
 
@@ -27,8 +25,9 @@ def authenticated(func):
 
 def run():
     unfollowers = followers - twitter.get_follower_ids(12)
-    print(f"Unfollowed: {len(unfollowers)}")
-    #send_message()
+    logger.info("%s people unfollowed you", len(unfollowers))
+    for uf in unfollowers:
+        twitter.send_direct_message(12, f"{uf} unfollowed you :(")
 
 
 def main():

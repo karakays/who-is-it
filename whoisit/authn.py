@@ -4,7 +4,6 @@ import config
 from utils import *
 
 
-logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

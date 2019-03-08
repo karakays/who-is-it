@@ -1,17 +1,19 @@
 import requests
 import config
+import logging
 
 from authn import authn_request_context
 
 # from app import authenticated
 
+logger = logging.getLogger(__name__)
 
 # @authenticated
 def get_follower_ids(ids):
     authn_ctx = authn_request_context('GET', config.TWT_FOLLOWERS_URL)
     response = requests.get(authn_ctx.endpoint,
                             headers=authn_ctx.get_authz_header())
-    print(response.headers)
+    # logger.debug(response.headers)
     return set(response.json()['ids'])
 
 
@@ -27,5 +29,6 @@ def send_direct_message(recipient_id, message):
     response = requests.post(config.TWT_DIRECT_MSG_URL,
                              headers=authn_ctx.get_authz_header(),
                              data=payload)
-    # print(response.headers)
-    print(response.text)
+
+    # jkjblogger.debug(response.headers)
+    # logger.debug(response.text)
