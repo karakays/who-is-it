@@ -3,7 +3,7 @@ import config
 
 from authn import authn_request_context
 
-from app import authenticated
+# from app import authenticated
 
 
 # @authenticated
