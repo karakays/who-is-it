@@ -21,7 +21,7 @@ ACCESS_TOKEN_SECRET     = None
 def read_config_file():
     global CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET
 
-    with open('config.json', 'r') as jsonfile:
+    with open('keys.json', 'r') as jsonfile:
         config = json.load(jsonfile)['credentials']
 
         CONSUMER_KEY = config['consumer_key']

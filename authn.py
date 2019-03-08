@@ -64,7 +64,7 @@ class authn_request_context:
                 key, value = p.split('=')
                 params.append((percent_encode(key), percent_encode(value)))
 
-        # sort by keys lexically
+        # canonicalize
         params.sort(key = lambda p: p[0])
 
         normalized_params = urlencode(params)
@@ -95,3 +95,7 @@ oauth_version=\"{config.OAUTH_VERSION}\"\
 
     def authenticate(self):
         pass
+
+
+authentication = authn_details(config.CONSUMER_KEY, config.CONSUMER_SECRET,
+                               config.ACCESS_TOKEN, config.ACCESS_TOKEN_SECRET)

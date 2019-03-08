@@ -13,8 +13,6 @@ logger = logging.getLogger(__name__)
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
-authentication = authn_details(config.CONSUMER_KEY, config.CONSUMER_SECRET,
-                               config.ACCESS_TOKEN, config.ACCESS_TOKEN_SECRET)
 followers = set()
 
 class temp_cred_request:
@@ -115,6 +113,7 @@ oauth_verifier=\"{self.verifier}\", \
 oauth_version=\"{oauth_version}\"\
 "
 
+
 def request_temp_token(consumer_key, consumer_key_secret, callback_url):
     request = temp_cred_request(consumer_key, consumer_secret, callback_url)
     headers = {'Authorization': request.auth_header()}
@@ -170,7 +169,6 @@ def authenticated(func):
 
 
 def run():
-    global followers
     unfollowers = followers - twitter.get_follower_ids(12)
     print(f"Unfollowed: {len(unfollowers)}")
     #send_message()
