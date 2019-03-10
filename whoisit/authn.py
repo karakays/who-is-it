@@ -1,7 +1,7 @@
 import logging
-import config
 
-from utils import *
+from .config import *
+from .utils import *
 
 
 logger = logging.getLogger(__name__)
@@ -52,10 +52,10 @@ class authn_request_context:
     def base_string(self):
         params = [("oauth_consumer_key", authentication.key),
                   ("oauth_nonce", self.nonce),
-                  ("oauth_signature_method", config.OAUTH_SIGNATURE_METHOD),
+                  ("oauth_signature_method", OAUTH_SIGNATURE_METHOD),
                   ("oauth_timestamp", self.timestamp),
                   ("oauth_token", authentication.token),
-                  ("oauth_version", config.OAUTH_VERSION)]
+                  ("oauth_version", OAUTH_VERSION)]
 
         if self.body:
             pairs = self.body.split('&')
@@ -85,16 +85,16 @@ class authn_request_context:
         signature = self.sign(base_str)
         return {'Authorization': f"OAuth oauth_nonce=\"{self.nonce}\", \
 oauth_token=\"{percent_encode(authentication.token)}\", \
-oauth_signature_method=\"{config.OAUTH_SIGNATURE_METHOD}\", \
+oauth_signature_method=\"{OAUTH_SIGNATURE_METHOD}\", \
 oauth_timestamp=\"{self.timestamp}\", \
 oauth_consumer_key=\"{authentication.key}\", \
 oauth_signature=\"{signature}\", \
-oauth_version=\"{config.OAUTH_VERSION}\"\
+oauth_version=\"{OAUTH_VERSION}\"\
 "}
 
     def authenticate(self):
         pass
 
 
-authentication = authn_details(config.CONSUMER_KEY, config.CONSUMER_SECRET,
-                               config.ACCESS_TOKEN, config.ACCESS_TOKEN_SECRET)
+authentication = authn_details(CONSUMER_KEY, CONSUMER_SECRET,
+                               ACCESS_TOKEN, ACCESS_TOKEN_SECRET)

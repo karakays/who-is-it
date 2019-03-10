@@ -1,12 +1,8 @@
-import config
 import logging
 import sched
 import time
 
-import twitter
-
-from utils import *
-from authn import authn_details
+from . import twt
 
 
 logger = logging.getLogger(__name__)
@@ -24,11 +20,13 @@ def authenticated(func):
 
 
 def run():
-    unfollowers = followers - twitter.get_follower_ids(12)
+    account = twt.get_account_details()
+    unfollowers = followers - twt.get_follower_ids()
     logger.info("%s people unfollowed you", len(unfollowers))
     for uf in unfollowers:
-        twitter.send_direct_message(12, f"{uf} unfollowed you :(")
-
+        twt.send_direct_message(account["id"], f"{uf} unfollowed you :(")
+    else:
+        twt.send_direct_message(account["id"], "no one unfollowed you")
 
 def main():
     scheduler = sched.scheduler(time.time, time.sleep)

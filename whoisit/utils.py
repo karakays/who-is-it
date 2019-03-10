@@ -1,4 +1,8 @@
-import time, hmac, hashlib, os
+import time
+import hmac
+import time
+import hashlib
+import os
 
 from urllib.parse import urlencode, quote, parse_qsl
 from base64 import b64encode, b32encode
