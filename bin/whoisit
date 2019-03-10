@@ -1,16 +1,7 @@
 #!/usr/bin/env python3
 import sys
 
-# test
-
 sys.path.insert(0, '/home/karakays/workspace/who-is-it')
-
-print(sys.path)
-
-#from whoisit import main
-#from ..whoisit import main
-#import whoisit.config
 import whoisit
 
-print("hezzz")
 whoisit.main()
