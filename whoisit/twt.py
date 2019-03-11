@@ -21,7 +21,7 @@ def get_follower_ids():
     else:
         logger.warn("Cannot get followers: %s, %s", response.status_code,
                     response.content)
-        raise RuntimeError()
+        raise TwtError('Cannot get twitter followers')
 
 
 def send_direct_message(recipient_id, message):
@@ -42,6 +42,7 @@ def send_direct_message(recipient_id, message):
     if not response.ok:
         logger.warn("Cannot send message: %s, %s", response.status_code,
                     response.content)
+        raise TwtError('Cannot send twitter message')
 
 
 def get_account_details():
@@ -53,3 +54,12 @@ def get_account_details():
 
     if response.ok:
         return response.json()
+    else:
+        raise TwtError('Cannot get twitter account details')
+
+
+class TwtError(Exception):
+    def __init__(self, msg=None, value=None):
+        self.args = (msg, value)
+        self.msg = msg
+        self.value = value

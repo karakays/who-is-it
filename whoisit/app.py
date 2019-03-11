@@ -20,13 +20,17 @@ def authenticated(func):
 
 
 def run():
-    account = twt.get_account_details()
-    unfollowers = followers - twt.get_follower_ids()
-    logger.info("%s people unfollowed you", len(unfollowers))
-    for uf in unfollowers:
-        twt.send_direct_message(account["id"], f"{uf} unfollowed you :(")
-    else:
-        twt.send_direct_message(account["id"], "no one unfollowed you")
+    try:
+        account = twt.get_account_details()
+        unfollowers = followers - twt.get_follower_ids()
+        logger.info("%s people unfollowed you", len(unfollowers))
+        for uf in unfollowers:
+            twt.send_direct_message(account["id"], f"{uf} unfollowed you :(")
+        else:
+            logger.debug("No unfollowers, yay!")
+    except twt.TwtError:
+        pass
+
 
 def main():
     scheduler = sched.scheduler(time.time, time.sleep)
