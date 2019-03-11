@@ -1,5 +1,5 @@
 PYTHON		= python3
-VERSION		= $(shell cat whoisit/_version)
+VERSION		= $(shell awk '{print $$3}' whoisit/_version.py | tr -d "'")
 
 .PHONY: clean
 clean: clean-build clean-pyc
@@ -20,9 +20,9 @@ build:
 
 .PHONY: release
 release:
-	#git tag -a $(VERSION)
+	git tag -s $(VERSION) -m "$(VERSION)"
 	$(PYTHON) setup.py check sdist
-	#git push origin master --tags
+	git push origin master --tags
 
 .PHONY: deploy
 deploy:
