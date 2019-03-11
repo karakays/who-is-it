@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import sys
+import os
 
-sys.path.insert(0, '/home/karakays/workspace/who-is-it')
+USER_HOME = os.environ.get('HOME')
+sys.path.insert(0, USER_HOME + '/workspace/who-is-it')
 import whoisit
 
 whoisit.main()
