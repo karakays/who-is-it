@@ -55,6 +55,8 @@ def get_account_details():
     if response.ok:
         return response.json()
     else:
+        logger.warn("Cannot get account details: %s, %s", response.status_code,
+                    response.content)
         raise TwtError('Cannot get twitter account details')
 
 
