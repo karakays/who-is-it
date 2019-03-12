@@ -27,7 +27,7 @@ def run():
         for uf in unfollowers:
             twt.send_direct_message(account["id"], f"{uf} unfollowed you :(")
         else:
-            logger.debug("No unfollowers, yay!")
+            logger.info("No unfollowers, yay!")
     except twt.TwtError:
         pass
 
@@ -35,7 +35,7 @@ def run():
 def main():
     scheduler = sched.scheduler(time.time, time.sleep)
     while True:
-        scheduler.enter(5, 1, run)
+        scheduler.enter(120, 1, run)
         scheduler.run()
 
 
