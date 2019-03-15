@@ -20,5 +20,7 @@ setup(
     python_requires='>=3',
     keywords=['twitter', 'followers', 'authentication'],
     long_description=open('README.rst').read(),
-    scripts=['bin/whoisit']
+    entry_points={
+        'console_scripts': [ 'whoisit = whoisit.__main__:main' ]
+    }
 )

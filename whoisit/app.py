@@ -19,7 +19,7 @@ def authenticated(func):
     return wrapper_authenticated
 
 
-def run():
+def check_followers():
     try:
         account = twt.get_account_details()
         unfollowers = followers - twt.get_follower_ids()
@@ -32,12 +32,8 @@ def run():
         pass
 
 
-def main():
+def run():
     scheduler = sched.scheduler(time.time, time.sleep)
     while True:
-        scheduler.enter(120, 1, run)
+        scheduler.enter(5, 1, check_followers)
         scheduler.run()
-
-
-if __name__ == '__main__':
-    main()
