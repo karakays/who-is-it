@@ -20,11 +20,11 @@ bdist:
 	$(PYTHON) setup.py bdist
 
 .PHONY: sdist
-bdist:
+sdist:
 	$(PYTHON) setup.py sdist
 
 .PHONY: install
-build:
+install:
 	$(PYTHON) setup.py install
 
 .PHONY: release
