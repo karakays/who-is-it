@@ -14,9 +14,17 @@ clean-pyc:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name __pycache__ -delete
 
-.PHONY: build
+.PHONY: bdist
+bdist:
+	$(PYTHON) setup.py bdist
+
+.PHONY: sdist
+bdist:
+	$(PYTHON) setup.py sdist
+
+.PHONY: install
 build:
-	$(PYTHON) setup.py bdist_wheel
+	$(PYTHON) setup.py install
 
 .PHONY: release
 release:
