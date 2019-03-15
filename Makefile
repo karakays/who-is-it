@@ -1,5 +1,6 @@
 PYTHON		= python3
-VERSION		= $(shell awk '{print $$3}' whoisit/_version.py | tr -d "'")
+MODULE		= whoisit
+VERSION		= $(shell awk '{print $$3}' $(MODULE)/_version.py | tr -d "'")
 
 .PHONY: clean
 clean: clean-build clean-pyc
