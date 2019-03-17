@@ -17,10 +17,15 @@ setup(
     install_requires=['requests>=2.21.0'],
     license='MIT',
     packages=find_packages(),
-    python_requires='>=3',
+    python_requires='>=3.6',
     keywords=['twitter', 'followers', 'authentication'],
     long_description=open('README.rst').read(),
     entry_points={
         'console_scripts': [ 'whoisit = whoisit.__main__:main' ]
-    }
+    },
+    classifiers=[ "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "License :: OSI Approved :: MIT License"
+    ]
 )
