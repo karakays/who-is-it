@@ -6,7 +6,10 @@ from ._version import __version__
 from .utils import percent_encode
 
 
-logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+__title__ = 'whoisit'
+
+logging.basicConfig(filename=__title__ + '.log',
+                    format='%(asctime)s %(message)s', level=logging.INFO)
 
 
 class authn_details:
