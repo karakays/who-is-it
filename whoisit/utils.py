@@ -17,8 +17,9 @@ def timestamp():
 
 
 def generate_nonce():
-    """ 40 bytes of random data. Since twitter only accepts alphanumeric
-    " characters no padding is involved.
+    """
+    40 bytes of random data. Since twitter only accepts
+    alphanumeric characters, no padding is involved.
     """
     random_bytes = os.urandom(40)
     return b32encode(random_bytes).decode()
