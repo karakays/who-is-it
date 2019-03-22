@@ -2,22 +2,10 @@ import logging
 
 from .config import *
 from .utils import *
+from whoisit import authentication
 
 
 logger = logging.getLogger(__name__)
-
-
-class authn_details:
-    def __init__(self, oauth_consumer_key, oauth_consumer_secret, oauth_token, oauth_token_secret):
-        """
-        oauth_token=returned from request_token response
-        oauth_token_secret=returned from request_token response
-        oauth_verifier=returned from resource owner auth phase
-        """
-        self.key = oauth_consumer_key
-        self.token = oauth_token
-        self.secret = percent_encode(oauth_consumer_secret) + '&' + \
-                      percent_encode(oauth_token_secret)
 
 
 """
@@ -80,7 +68,7 @@ class authn_request_context:
         return percent_encode(mac)
 
 
-    def get_authz_header(self):
+    def get_auth_header(self):
         base_str = self.base_string()
         signature = self.sign(base_str)
         return {'Authorization': f"OAuth oauth_nonce=\"{self.nonce}\", \
@@ -94,7 +82,3 @@ oauth_version=\"{OAUTH_VERSION}\"\
 
     def authenticate(self):
         pass
-
-
-authentication = authn_details(CONSUMER_KEY, CONSUMER_SECRET,
-                               ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
