@@ -12,3 +12,5 @@
 * virtualenv
 
 * requirements file
+
+* logging rotation
